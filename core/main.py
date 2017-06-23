@@ -1,22 +1,22 @@
 import pandas as pd
 from abc import ABC
 ## TODO
-# 1. make a field instantiatior
-# 2. use class._fields to act on self._data
-# 3.
 
 class genericDB(ABC):
     """
     Generic database structure to be inherited to specific database structures
     """
     ##Class Fields ##
-    _fields = []
 
     ##Init##
     def __init__(self, *args, **kwargs):
-        self._data = pd.DataFrame()
-        if 'fields' in kwargs:
-            self.setFields(*kwargs['fields'])
+        # Handle args == 1
+        if len(args) > 1:
+            raise AttributeError('Too many arguments')
+        for arg in args:
+            kwargs['data'] = arg
+
+        # Handle data in kwargs
         if 'data' in kwargs:
             data = kwargs.pop('data')
             self.setData(data, **kwargs)
@@ -27,23 +27,30 @@ class genericDB(ABC):
 
 
     def setData(self, data, **kwargs):
-        self._data = pd.DataFrame(data=data, **kwargs)
+        if kwargs.pop('dataFrame', True) and data == type(pd.DataFrame()):
+            self._data = data
+        else:
+            self._data = pd.DataFrame(data=data, **kwargs)
 
     def getData(self):
         return self._data
 
-    def setFields(self, *args):
-        """Set class-based fields"""
-        genericDB._fields = [arg for arg in args]
+    def addDataEntry(self, dataPoint):
+        #TODO - not working
+        """Add dataPoint to DB"""
+        idx = len(self._data) + 1
+        while idx not in self._data.index:
+            idx += 1
+        self._data.loc[idx] = dataPoint
 
-    def addToFields(self, *args):
-        """Add field to class-based fields"""
-        for arg in args:
-            genericDB._fields.append(arg)
-
-    def addDataEntry(self, *args, **kwargs):
-        print('Not Instantiated!')
-        pass
+    def catDB(self, other):
+        #TODO - not working
+        """Concatenate DB to current DB"""
+        idx = len(self._data) + 1
+        for odx in other.index:
+            while idx not in self._data.index:
+                idx += 1
+            self._data.loc[idx] = other.loc[odx]
 
     def saveDB(self, **kwargs):
         """Save Database using pandas tools"""

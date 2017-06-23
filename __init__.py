@@ -1,2 +1,2 @@
 from . import util
-from .src import *
+from .core import *
