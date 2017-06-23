@@ -102,3 +102,6 @@ ENV/
 
 #ideabrains
 .idea
+
+#Pickle Files
+*.pickle
