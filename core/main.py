@@ -9,69 +9,79 @@ class genericDB(ABC):
     ##Class Fields ##
 
     ##Init##
-    def __init__(self, *args, **kwargs):
-        # Handle args == 1
-        if len(args) > 1:
-            raise AttributeError('Too many arguments')
-        for arg in args:
-            kwargs['data'] = arg
-
+    def __init__(self, data=None, load=None, keyValues=None, **kwargs):
+        self._data = {}
+        self._index = []
+        self._keyValues = tuple()
         # Handle data in kwargs
-        if 'data' in kwargs:
-            data = kwargs.pop('data')
-            self.setData(data, **kwargs)
-        if 'load' in kwargs:
-            kwargs.pop('load')
+        if load is not None:
             fileName = kwargs.pop('fileName')
             self.loadDB(fileName, **kwargs)
+        if keyValues is not None:
+            self.setData({key: [] for key in keyValues})
 
-
-    def setData(self, data, **kwargs):
-        if kwargs.pop('dataFrame', True) and data == type(pd.DataFrame()):
-            self._data = data
-        else:
+    def setData(self, data=None, **kwargs):
+        if kwargs.pop('DataFrame',False):
             self._data = pd.DataFrame(data=data, **kwargs)
+        else:
+            self._data = data
+            self._setIndex()
+            self._setKeyValues()
 
-    def getData(self):
-        return self._data
+    def getData(self, dataFrame=True):
+        if DataFrame:
+            return pd.DataFrame(self._data, index=self._index)
+        else:
+            return self._data
+
+    def _setIndex(self):
+        self._index = range(len(self.getData(False)))
+
+    def _setKeyValues(self):
+        self._keyValues = tuple(self.getData(Flase).keys())
+
+    def getKeyValues(self):
+        return self._keyValues
 
     def addDataEntry(self, dataPoint):
-        #TODO - not working
         """Add dataPoint to DB"""
-        idx = len(self._data) + 1
-        while idx not in self._data.index:
-            idx += 1
-        self._data.loc[idx] = dataPoint
+        for k,v in dataPoint.items():
+            if k not in data.getKeyValues():
+                raise AttributeError('Key {key} not found!'.format(key=k)
+            self._data[k].append(v)
+            self._setIndex()
 
     def catDB(self, other):
-        #TODO - not working
         """Concatenate DB to current DB"""
-        idx = len(self._data) + 1
-        for odx in other.index:
-            while idx not in self._data.index:
-                idx += 1
-            self._data.loc[idx] = other.loc[odx]
+        otherData = other.getData(dataFrame=False)
+        otherKeys = other.getKeyValues()
+        if otherKeys != self.getKeyValues():
+            raise AttributeError('KeyValue mismatch!')
+        while otherData[otherKeys[0]] > 0:
+            newDataPoint = {}
+            for k in otherKeys:
+                newDataPoint[k] = otherData[k].pop(0)
+            self.addDataEntry(newDataPoint)
 
-    def saveDB(self, **kwargs):
+    def saveDB(self, fileName='./cardDB.pickle', fileType='pickle', **kwargs):
         """Save Database using pandas tools"""
-        fileType = kwargs.pop('fileType', 'pickle').lower()
-        fileName = kwargs.pop('fileName', './cardDB.pickle')
+        fileType = filetype.lower()
         if 'pickle' in fileType:
-            return self._data.to_pickle(fileName)
+            return self.getData(False).to_pickle(fileName)
         elif 'csv' in fileType:
-            return self._data.to_csv(fileName, **kwargs)
+            return self.getData().to_csv(fileName, **kwargs)
         if 'xls' in fileType:
-            return self._data.to_excel(fileName, **kwargs)
+            return self.getData().to_excel(fileName, **kwargs)
 
-    def loadDB(self, fileName, **kwargs):
+    def loadDB(self, fileName, filetype='pickle', **kwargs):
         """Load Database using pandas tools"""
-        fileType = kwargs.pop('fileType', 'pickle').lower()
+        fileType = filetype.lower()
         if 'pickle' in fileType:
-            self._data = pd.read_pickle(fileName)
+            self.setData(pd.read_pickle(fileName))
         elif 'csv' in fileType:
-            self._data = pd.read_csv(fileName, **kwargs)
+            self.setData(pd.read_csv(fileName, **kwargs))
         if 'xls' in fileType:
-            self._data = pd.read_excel(fileName, **kwargs)
+            self.setData(pd.read_excel(fileName, **kwargs))
 
     def __getattr__(self, item):
         return getattr(self._data, item)
