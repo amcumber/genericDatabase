@@ -1,27 +1,35 @@
 import pandas as pd
 from abc import ABC
-## TODO
+# TODO
+# 1. Issue with a db of 1, getData is doubling the index
+# 2. issue with db values that are not lists -> must force a list
+# 3. test NoneType dicts
+# 4. indexing wrong getting key len not val len
+# 5. catDb not working
+
+# Load and save not tested
+
 
 class genericDB(ABC):
     """
     Generic database structure to be inherited to specific database structures
     """
-    ##Class Fields ##
-
-    ##Init##
     def __init__(self, data=None, load=None, keyValues=None, **kwargs):
         self._data = {}
         self._index = []
         self._keyValues = tuple()
+
+        if keyValues is not None:
+            self.setData({key: [] for key in keyValues})
+        else:
+            self.setData(data=data)
         # Handle data in kwargs
         if load is not None:
             fileName = kwargs.pop('fileName')
             self.loadDB(fileName, **kwargs)
-        if keyValues is not None:
-            self.setData({key: [] for key in keyValues})
 
     def setData(self, data=None, **kwargs):
-        if kwargs.pop('DataFrame',False):
+        if kwargs.pop('DataFrame', False):
             self._data = pd.DataFrame(data=data, **kwargs)
         else:
             self._data = data
@@ -29,25 +37,31 @@ class genericDB(ABC):
             self._setKeyValues()
 
     def getData(self, dataFrame=True):
-        if DataFrame:
+        if dataFrame:
             return pd.DataFrame(self._data, index=self._index)
         else:
             return self._data
 
     def _setIndex(self):
-        self._index = range(len(self.getData(False)))
+        try:
+            self._index = range(len(self.getData(False)))
+        except TypeError:
+            self._index = range(0)
 
     def _setKeyValues(self):
-        self._keyValues = tuple(self.getData(Flase).keys())
+        try:
+            self._keyValues = tuple(self.getData(False).keys())
+        except AttributeError:
+            self._keyValues = tuple()
 
     def getKeyValues(self):
         return self._keyValues
 
     def addDataEntry(self, dataPoint):
         """Add dataPoint to DB"""
-        for k,v in dataPoint.items():
-            if k not in data.getKeyValues():
-                raise AttributeError('Key {key} not found!'.format(key=k)
+        for k, v in dataPoint.items():
+            if k not in self.getKeyValues():
+                raise AttributeError('Key {key} not found!'.format(key=k))
             self._data[k].append(v)
             self._setIndex()
 
@@ -65,7 +79,7 @@ class genericDB(ABC):
 
     def saveDB(self, fileName='./cardDB.pickle', fileType='pickle', **kwargs):
         """Save Database using pandas tools"""
-        fileType = filetype.lower()
+        fileType = fileType.lower()
         if 'pickle' in fileType:
             return self.getData(False).to_pickle(fileName)
         elif 'csv' in fileType:
@@ -73,9 +87,9 @@ class genericDB(ABC):
         if 'xls' in fileType:
             return self.getData().to_excel(fileName, **kwargs)
 
-    def loadDB(self, fileName, filetype='pickle', **kwargs):
+    def loadDB(self, fileName, fileType='pickle', **kwargs):
         """Load Database using pandas tools"""
-        fileType = filetype.lower()
+        fileType = fileType.lower()
         if 'pickle' in fileType:
             self.setData(pd.read_pickle(fileName))
         elif 'csv' in fileType:
